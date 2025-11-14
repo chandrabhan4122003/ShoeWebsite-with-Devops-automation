@@ -1,0 +1,132 @@
+---
+- name: Deploy E-commerce Website to EC2
+  hosts: webservers
+  become: yes
+
+  vars:
+    website_dir: /var/www/ecommerce
+    nginx_config: /etc/nginx/sites-available/ecommerce
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - nginx
+          - git
+          - curl
+        state: present
+
+    - name: Create website directory
+      file:
+        path: "{{ website_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Remove old website directory
+      file:
+        path: "{{ website_dir }}"
+        state: absent
+
+    - name: Create fresh website directory
+      file:
+        path: "{{ website_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy HTML files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ website_dir }}/"
+        mode: "0644"
+      with_fileglob:
+        - "../../*.html"
+
+    - name: Copy CSS files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ website_dir }}/"
+        mode: "0644"
+      with_fileglob:
+        - "../../*.css"
+
+    - name: Copy JS files
+      copy:
+        src: "{{ item }}"
+        dest: "{{ website_dir }}/"
+        mode: "0644"
+      with_fileglob:
+        - "../../*.js"
+      ignore_errors: yes
+
+    - name: Copy images directory
+      synchronize:
+        src: "../../images/"
+        dest: "{{ website_dir }}/images/"
+        recursive: yes
+
+    - name: Set correct permissions on website directory
+      file:
+        path: "{{ website_dir }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+        recurse: yes
+
+    - name: Set correct permissions on files
+      shell: |
+        find {{ website_dir }} -type f -exec chmod 644 {} \;
+        find {{ website_dir }} -type d -exec chmod 755 {} \;
+
+    - name: Configure Nginx
+      template:
+        src: ../templates/nginx.conf.j2
+        dest: "{{ nginx_config }}"
+        mode: "0644"
+
+    - name: Enable Nginx site
+      file:
+        src: "{{ nginx_config }}"
+        dest: /etc/nginx/sites-enabled/ecommerce
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Test Nginx configuration
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+        enabled: yes
+
+    - name: Configure UFW firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "22"
+        - "80"
+        - "443"
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Display deployment info
+      debug:
+        msg:
+          - "Website deployed successfully!"
+          - "Access your website at: http://{{ ansible_host }}"

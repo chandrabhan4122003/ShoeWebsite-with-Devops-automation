@@ -1,0 +1,24 @@
+server {
+    listen 80;
+    listen [::]:80;
+    
+    server_name {{ ansible_host }} {{ ansible_fqdn }};
+    
+    root {{ website_dir }};
+    index index.html;
+    
+    location / {
+        try_files $uri $uri/ =404;
+    }
+    
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    error_page 404 /404.html;
+    error_page 500 502 503 504 /50x.html;
+    
+    access_log /var/log/nginx/ecommerce_access.log;
+    error_log /var/log/nginx/ecommerce_error.log;
+}
