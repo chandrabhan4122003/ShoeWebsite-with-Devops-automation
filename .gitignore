@@ -4,6 +4,8 @@ terraform/.terraform.lock.hcl
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/*.tfvars.backup
+terraform/*.tfstate.*
+terraform/crash.log
 
 # Ansible
 ansible/*.retry
@@ -13,6 +15,17 @@ ansible/.vault_pass
 *.pem
 *.key
 id_rsa*
+*.pub
+
+# AWS Credentials
+.aws/
+credentials
+config
+
+# Environment Variables
+.env
+.env.local
+*.env
 
 # OS
 .DS_Store
@@ -21,3 +34,14 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.backup
+*.bak
